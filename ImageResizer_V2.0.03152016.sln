@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageResizer_V2.0.03152016", "ImageResizer_V2.0.03152016\ImageResizer_V2.0.03152016.csproj", "{65105B05-3267-4173-B8F1-E6E0BC464359}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageResizer", "..\..\..\..\OneDrive for Business\IPS\ImageResizer\ImageResizer\ImageResizer.csproj", "{41B0BFF1-B4BA-4A50-ABC2-226A35DF5ED9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageResizer", "..\ImageResizer\ImageResizer\ImageResizer.csproj", "{41B0BFF1-B4BA-4A50-ABC2-226A35DF5ED9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
