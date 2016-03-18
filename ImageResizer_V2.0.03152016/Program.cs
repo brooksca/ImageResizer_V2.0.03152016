@@ -44,6 +44,8 @@ namespace ImageResizer_V2._0._03152016
                     Log.CloseWithErrors();
                     Environment.Exit(-1);
                 }
+                foreach (string directory in Directory.GetDirectories(options.Directory))
+                    IterateOverFiles(directory);
                 IterateOverFiles(options.Directory);
             }
 
