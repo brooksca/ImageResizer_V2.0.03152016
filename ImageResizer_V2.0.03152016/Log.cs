@@ -10,7 +10,11 @@ namespace ImageResizer_V2._0._03152016
 {
     class Log
     {
+#if DEBUG
+        private static string LogDirectory = @"C:\ImageResizer";
+#else
         private static string LogDirectory = @"D:\ImageResizer";
+#endif
         public static string LogPath = Path.Combine(LogDirectory, "ImageResizeLog.txt");
 
         public static void WriteToLog(string message)
@@ -30,6 +34,7 @@ namespace ImageResizer_V2._0._03152016
 
         public static void ClearLog()
         {
+            WriteToLog("");
             File.WriteAllText(LogPath, string.Empty);
         }
 
