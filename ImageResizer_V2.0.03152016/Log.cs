@@ -40,13 +40,15 @@ namespace ImageResizer_V2._0._03152016
 
         public static void CloseWithSuccess()
         {
-            Console.WriteLine("Process completed successfully");
+            Console.WriteLine("Completed");
             File.AppendAllText(LogPath, "[" + DateTime.Now + "] Process completed successfully.");
         }
 
         public static void CloseWithErrors()
         {
+            Console.WriteLine("Failed");
             File.AppendAllText(LogPath, "[" + DateTime.Now + "] Process completed with errors.");
+            WriteToEventLog("ImageResizer Failed. Log saved at " + LogPath, EventLogEntryType.Error);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace ImageResizer_V2._0._03152016
     {
         public string ServerName { get; set; }
         public string LocationCode { get; set; }
-        public int FirmID { get; set; }
+        public string FirmID { get; set; }
         private const int ERROR_INVALID_LOCATION = 0xA0;
 
 #if !DEBUG
@@ -27,7 +27,7 @@ namespace ImageResizer_V2._0._03152016
             LocationCode = ServerName.Substring(0, 3).ToLower();
             try
             {
-                FirmID = (int)Enum.Parse(typeof(Locations), LocationCode);
+                FirmID = ((int)Enum.Parse(typeof(Locations), LocationCode)).ToString().PadLeft(2, '0');
             }
             catch (Exception ex)
             {
@@ -49,7 +49,7 @@ namespace ImageResizer_V2._0._03152016
             LocationCode = hostname.Substring(0, 3);
             try
             {
-                FirmID = (int)Enum.Parse(typeof(Locations), LocationCode);
+                FirmID = ((int)Enum.Parse(typeof(Locations), LocationCode)).ToString().PadLeft(2, '0');
             }
             catch(Exception ex)
             {

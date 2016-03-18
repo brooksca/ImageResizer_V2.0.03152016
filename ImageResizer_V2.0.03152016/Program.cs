@@ -28,6 +28,9 @@ namespace ImageResizer_V2._0._03152016
             parser = new Parser();
             StartTime = DateTime.Now;
             Log.ClearLog();
+            NumberOfFilesProcessed = 0;
+            NumberOfFilesSkipped = 0;
+            NumberOfErrors = 0;
 
             if (CommandLine.Parser.Default.ParseArguments(args, options))
             {
@@ -35,6 +38,7 @@ namespace ImageResizer_V2._0._03152016
                 if (!Directory.Exists(options.Directory))
                     Directory.CreateDirectory(options.Directory);
                 Location = new LocationFinder();
+#if !DEBUG
                 if (!Utilities.CheckDependencies())
                 {
                     ("Schintranet not found on network. Are you sure you're connected to the IPS network?").WriteLine();
@@ -44,10 +48,18 @@ namespace ImageResizer_V2._0._03152016
                     Log.CloseWithErrors();
                     Environment.Exit(-1);
                 }
+#endif
                 foreach (string directory in Directory.GetDirectories(options.Directory))
                     IterateOverFiles(directory);
                 IterateOverFiles(options.Directory);
             }
+
+            ("").WriteLine();
+            ("Successful " + NumberOfFilesProcessed + " | Skipped " + NumberOfFilesSkipped + " | Errors " + NumberOfErrors).WriteLine();
+            if (NumberOfErrors == 0)
+                Log.CloseWithSuccess();
+            else
+                Log.CloseWithErrors();
 
 #if DEBUG
             Utilities.PressAnyKeyToExit();
@@ -56,21 +68,17 @@ namespace ImageResizer_V2._0._03152016
 
         private static void IterateOverFiles(string directory)
         {
-            NumberOfFilesProcessed = 0;
-            NumberOfFilesSkipped = 0;
-            NumberOfErrors = 0;
-            if (Directory.GetFiles(options.Directory).Length == 0)
+            if (Directory.GetFiles(directory).Length == 0)
             {
                 ("No files found in directory: " + options.Directory).WriteLine();
                 Log.WriteToLog("Directory empty: " + options.Directory);
                 Log.WriteToEventLog("No files found in directory: " + options.Directory, EventLogEntryType.Warning);
-                Log.WriteToLog("Exiting");
             }
             else
             {
                 "Beginning image resizing...".WriteLine();
                 Log.WriteToLog("Beginning image resizing...");
-                foreach (string file in Directory.GetFiles(options.Directory))
+                foreach (string file in Directory.GetFiles(directory))
                 {
                     FileToTransfer thisFile = new FileToTransfer(file, Location.FirmID);
                     if (!options.ProcessOldFiles && thisFile.LastWriteTime < DateTime.Today.AddMonths(-1))
@@ -93,14 +101,9 @@ namespace ImageResizer_V2._0._03152016
                         else
                         {
                             ProcessImage(thisFile);
-                            NumberOfFilesProcessed++;
                         }
                     }
                 }
-
-                ("").WriteLine();
-                ("Successful " + NumberOfFilesProcessed + " | Skipped " + NumberOfFilesSkipped + " | Errors " + NumberOfErrors).WriteLine();
-                Log.CloseWithSuccess();
             }
         }
 
@@ -128,14 +131,32 @@ namespace ImageResizer_V2._0._03152016
             EncoderParameters encoderParameters = new EncoderParameters(1);
             encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 80L);
 
-            ResizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
-
-            ("Image resize/move successful").WriteLine();
-            Log.WriteToLog("Image resize/move successful: " + file.DestinationPath);
-            Log.WriteToEventLog("Image resize/remove successful. " + NumberOfFilesProcessed + " files processed, " + NumberOfFilesSkipped + " files skipped, and " + NumberOfErrors +
-                " errors. Log located at " + Log.LogPath, EventLogEntryType.Information);
-            picture.Dispose();
-            ResizedImage.Dispose();
+            try
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    ResizedImage.Save(memoryStream, file.EncoderInfo, encoderParameters);
+                    var streamImage = Image.FromStream(memoryStream);
+                    streamImage.Save(file.DestinationPath);
+                }
+                ResizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
+                ("Image resize/move successful").WriteLine();
+                Log.WriteToLog("Image resize/move successful: " + file.DestinationPath);
+                Log.WriteToEventLog("Image resize/remove successful. " + NumberOfFilesProcessed + " files processed, " + NumberOfFilesSkipped + " files skipped, and " + NumberOfErrors +
+                    " errors. Log located at " + Log.LogPath, EventLogEntryType.Information);
+                NumberOfFilesProcessed++;
+            }
+            catch(Exception ex)
+            {
+                ("Image resize/move failed: " + ex.Message).WriteLine();
+                Log.WriteToLog("Image resize/move failed: " + ex.Message + " (" + file.DestinationPath + ")");
+                NumberOfErrors++;
+            }
+            finally
+            {
+                picture.Dispose();
+                ResizedImage.Dispose();
+            }
         }
     }
 }

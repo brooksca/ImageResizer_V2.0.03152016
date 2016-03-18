@@ -18,18 +18,20 @@ namespace ImageResizer_V2._0._03152016
         public DateTime LastWriteTime { get; set; }
         public ImageCodecInfo EncoderInfo { get; set; }
 #if DEBUG
-        protected const string PathPrefix = @"C:\\AppTesting\\acs\\acs\\firms\\";
-        protected const string PathSuffix = @"\\images\\jobs\\";
+        protected const string PathPrefix = @"C:\AppTesting\acs\acs\firms\";
+        protected const string PathSuffix = @"\images\jobs\";
 #else   
-        protected const string PathPrefix = @"\\schintranet\\acs\\acs\\firms\\";
-        protected const string PathSuffix = @"\\images\\jobs\\";
+        protected const string PathPrefix = @"\\schintranet\acs\acs\firms\";
+        protected const string PathSuffix = @"\images\jobs\";
 #endif
 
-        public FileToTransfer(string sourcePath, int firmID)
+        public FileToTransfer(string sourcePath, string firmID)
         {
+            // TODO: Get parent directory name from source, add it to destination path
             SourcePath = sourcePath;
             Extension = Path.GetExtension(SourcePath);
-            DestinationPath = PathPrefix + "firm" + firmID + "\\" + PathSuffix + Path.GetFileName(sourcePath);
+            DestinationPath = Path.Combine(PathPrefix + "firm" + firmID.ToString() + PathSuffix, Path.GetFileName(sourcePath));
+            CheckDestination();
             ExistsInDestination = File.Exists(DestinationPath);
             LastWriteTime = File.GetLastWriteTime(SourcePath);
             EncoderInfo = GetEncoderInfo();
