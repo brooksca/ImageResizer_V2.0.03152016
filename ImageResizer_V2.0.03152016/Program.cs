@@ -16,8 +16,6 @@ namespace ImageResizer_V2._0._03152016
         private static Options options;
         private static Parser parser;
         private static LocationFinder Location;
-        private static string ACSJobNumber;
-        private static DateTime StartTime;
         private static int NumberOfFilesProcessed;
         private static int NumberOfFilesSkipped;
         private static int NumberOfErrors;
@@ -26,15 +24,13 @@ namespace ImageResizer_V2._0._03152016
         {
             options = new Options();
             parser = new Parser();
-            StartTime = DateTime.Now;
-            Log.ClearLog();
+            Log.BeginLog();
             NumberOfFilesProcessed = 0;
             NumberOfFilesSkipped = 0;
             NumberOfErrors = 0;
 
             if (CommandLine.Parser.Default.ParseArguments(args, options))
             {
-                Log.WriteToLog("Program start");
                 if (!Directory.Exists(options.Directory))
                     Directory.CreateDirectory(options.Directory);
                 Location = new LocationFinder();
@@ -51,15 +47,9 @@ namespace ImageResizer_V2._0._03152016
 #endif
                 foreach (string directory in Directory.GetDirectories(options.Directory))
                     IterateOverFiles(directory);
-                IterateOverFiles(options.Directory);
             }
-
-            ("").WriteLine();
-            ("Successful " + NumberOfFilesProcessed + " | Skipped " + NumberOfFilesSkipped + " | Errors " + NumberOfErrors).WriteLine();
-            if (NumberOfErrors == 0)
-                Log.CloseWithSuccess();
-            else
-                Log.CloseWithErrors();
+            Console.WriteLine();
+            Log.CloseLog(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesProcessed);
 
 #if DEBUG
             Utilities.PressAnyKeyToExit();
@@ -68,11 +58,12 @@ namespace ImageResizer_V2._0._03152016
 
         private static void IterateOverFiles(string directory)
         {
+            IterateThroughDirectories(directory);
             if (Directory.GetFiles(directory).Length == 0)
             {
-                ("No files found in directory: " + options.Directory).WriteLine();
-                Log.WriteToLog("Directory empty: " + options.Directory);
-                Log.WriteToEventLog("No files found in directory: " + options.Directory, EventLogEntryType.Warning);
+                ("No files found in directory: " + directory).WriteLine();
+                Log.WriteToLog("Directory empty: " + directory);
+                Log.WriteToEventLog("No files found in directory: " + directory);
             }
             else
             {
@@ -105,6 +96,12 @@ namespace ImageResizer_V2._0._03152016
                     }
                 }
             }
+        }
+
+        private static void IterateThroughDirectories(string directory)
+        {
+            foreach(string subDirectory in Directory.GetDirectories(directory))
+                IterateOverFiles(subDirectory);
         }
 
         private static void ProcessImage(FileToTransfer file)
@@ -142,8 +139,6 @@ namespace ImageResizer_V2._0._03152016
                 ResizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
                 ("Image resize/move successful").WriteLine();
                 Log.WriteToLog("Image resize/move successful: " + file.DestinationPath);
-                Log.WriteToEventLog("Image resize/remove successful. " + NumberOfFilesProcessed + " files processed, " + NumberOfFilesSkipped + " files skipped, and " + NumberOfErrors +
-                    " errors. Log located at " + Log.LogPath, EventLogEntryType.Information);
                 NumberOfFilesProcessed++;
             }
             catch(Exception ex)

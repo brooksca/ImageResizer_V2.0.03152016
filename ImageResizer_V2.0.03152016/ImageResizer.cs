@@ -39,7 +39,6 @@ namespace ImageResizer_V2._0._03152016
             {
                 ("Image resize failed. Moving to next file.").WriteLine();
                 Log.WriteToLog("Image resizing failed: " + ex.Message);
-                Log.WriteToEventLog("Image resizing failed: " + ex.Message, EventLogEntryType.Error);
                 return null;
             }
         }

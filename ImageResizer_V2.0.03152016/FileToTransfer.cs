@@ -12,6 +12,7 @@ namespace ImageResizer_V2._0._03152016
     class FileToTransfer
     {
         public string DestinationPath { get; private set; }
+        public string DestinationDirectory { get; set; }
         public string SourcePath { get; set; }
         public string Extension { get; set; }
         public bool ExistsInDestination { get; set; }
@@ -27,10 +28,10 @@ namespace ImageResizer_V2._0._03152016
 
         public FileToTransfer(string sourcePath, string firmID)
         {
-            // TODO: Get parent directory name from source, add it to destination path
             SourcePath = sourcePath;
             Extension = Path.GetExtension(SourcePath);
-            DestinationPath = Path.Combine(PathPrefix + "firm" + firmID.ToString() + PathSuffix, Path.GetFileName(sourcePath));
+            DestinationDirectory = Path.Combine(PathPrefix + "firm" + firmID.ToString() + PathSuffix + new FileInfo(sourcePath).Directory.Name);
+            DestinationPath = Path.Combine(DestinationDirectory, Path.GetFileName(sourcePath));
             CheckDestination();
             ExistsInDestination = File.Exists(DestinationPath);
             LastWriteTime = File.GetLastWriteTime(SourcePath);
@@ -41,9 +42,16 @@ namespace ImageResizer_V2._0._03152016
         {
             if (!Directory.Exists(DestinationPath))
             {
-                Log.WriteToLog("Directory not found: " + DestinationPath);
-                Log.WriteToEventLog("Directory not found: " + DestinationPath, EventLogEntryType.Error);
+#if DEBUG
+                Directory.CreateDirectory(DestinationDirectory);
+                Log.WriteToLog("Directory created: " + DestinationDirectory);
+#else
+                Log.WriteToLog("Directory not found: " + DestinationDirectory);
+                Log.WriteToEventLog("Directory not found: " + DestinationDirectory);
+#endif
             }
+            else
+                Log.WriteToLog("Destination path found: " + DestinationPath);
         }
 
         private ImageCodecInfo GetEncoderInfo()

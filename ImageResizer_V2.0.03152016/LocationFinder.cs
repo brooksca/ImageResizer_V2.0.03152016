@@ -32,7 +32,7 @@ namespace ImageResizer_V2._0._03152016
             catch (Exception ex)
             {
                 Log.WriteToLog("Location retrieval by machine name failed: " + ex.Message);
-                Log.WriteToEventLog("Location Retrieval Attempt Failed", EventLogEntryType.Warning);
+                Log.WriteToEventLog("Location Retrieval Attempt Failed");
                 GetLocationByHostname();
             }
             ("Running on: " + ServerName).WriteLine();
@@ -54,7 +54,7 @@ namespace ImageResizer_V2._0._03152016
             catch(Exception ex)
             {
                 Log.WriteToLog("Fatal Error: Location retrieval by host name failed. " + ex.Message);
-                Log.WriteToEventLog("Location Retrieval Attempt Failed", EventLogEntryType.Error);
+                Log.WriteToEventLog("Location Retrieval Attempt Failed");
                 Environment.Exit(ERROR_INVALID_LOCATION);
             }
         }
