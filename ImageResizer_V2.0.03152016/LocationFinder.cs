@@ -15,7 +15,7 @@ namespace ImageResizer_V2._0._03152016
         public int FirmID { get; set; }
         private const int ERROR_INVALID_LOCATION = 0xA0;
 
-        public enum Locations { sch, mco, mmm, mpc, rbi, rbt, rcc, rda, rdz, rem, rho, rlp, rpd, rpo, rrs, rsi, rsz, rwm, rwmk, rwp, tcw, all };
+        public enum Locations { sch, mco, mmm, mpc, rbi, rbt, rcc, rda, rdz, rem, rho, rlp, rpd, rpo, rrs, rsi, rsz, rwm, rwmk, rwp, tcw, uss };
 
         public LocationFinder()
         {

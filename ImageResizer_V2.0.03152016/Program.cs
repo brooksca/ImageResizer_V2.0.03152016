@@ -94,7 +94,6 @@ namespace ImageResizer_V2._0._03152016
                             NumberOfFilesProcessed++;
                         }
                     }
-
                 }
 
                 ("").WriteLine();

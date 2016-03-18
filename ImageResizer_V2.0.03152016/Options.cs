@@ -20,7 +20,13 @@ namespace ImageResizer_V2._0._03152016
         public bool ProcessPDFs { get; set; }
 
         // TODO: Set default value to the default directory
-        [Option('d', "directory", Required = false, HelpText = "Specifies the directory from which to process the images.", DefaultValue = @"D:\common\RSZ - ACS Job Photos\")]
+        [Option('d', "directory", Required = false, HelpText = "Specifies the directory from which to process the images.",
+#if DEBUG
+            DefaultValue = @"C:\common\RSZ - ACS Job Photos\"
+#else
+            DefaultValue = @"D:\common\RSZ - ACS Job Photos\"
+#endif
+)]
         public string Directory { get; set; }
 
         [Option('s', "max-picture-size", Required = false, HelpText = "Sets the size that pictures will be reformatted to.", DefaultValue = 1000)]

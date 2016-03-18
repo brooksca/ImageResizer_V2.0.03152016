@@ -17,8 +17,13 @@ namespace ImageResizer_V2._0._03152016
         public bool ExistsInDestination { get; set; }
         public DateTime LastWriteTime { get; set; }
         public ImageCodecInfo EncoderInfo { get; set; }
-        protected const string PathPrefix = @"\\schintranet\acs\acs\firms\";
-        protected const string PathSuffix = @"\images\jobs\";
+#if DEBUG
+        protected const string PathPrefix = @"C:\\AppTesting\\acs\\acs\\firms\\";
+        protected const string PathSuffix = @"\\images\\jobs\\";
+#else   
+        protected const string PathPrefix = @"\\schintranet\\acs\\acs\\firms\\";
+        protected const string PathSuffix = @"\\images\\jobs\\";
+#endif
 
         public FileToTransfer(string sourcePath, int firmID)
         {
