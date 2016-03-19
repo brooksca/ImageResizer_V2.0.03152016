@@ -18,22 +18,24 @@ namespace ImageResizer_V2._0._03152016
 #endif
         public static string LogPath = Path.Combine(LogDirectory, "ImageResizeLog.txt");
         public static List<string> EventLogMessages;
-        public static DateTime StartTime;
+        public static TimeSpan StartTime;
 
         public static void WriteToLog(string message)
         {
             File.AppendAllText(LogPath, "[" + DateTime.Now + "] " + message + "\r\n");
         }
 
-        public static void WriteToEventLog(string message)
+        public static void WriteToLog(LogMessage logMessage)
         {
-            EventLogMessages.Add(message);
+            string messageToWrite = "[" + logMessage.Time + "] "
+                + logMessage.Message;   
         }
 
         public static void BeginLog()
         {
             if (!Directory.Exists(LogDirectory))
                 Directory.CreateDirectory(LogDirectory);
+            StartTime = DateTime.Now.TimeOfDay;
             File.WriteAllText(LogPath, "");
             WriteToLog("Program start");
             EventLogMessages = new List<string>();
@@ -43,7 +45,7 @@ namespace ImageResizer_V2._0._03152016
         {
             EventLogEntryType eventType;
             string messages;
-            string results = "Successful " + numberOfFilesProcessed + " | Skipped " + numberOfFilesSkipped + " | Errors " + numberOfErrors;
+            string results = "Successful " + numberOfFilesProcessed + " | Skipped " + numberOfFilesSkipped + " | Errors " + numberOfErrors + " | " + DateTime.Now.TimeOfDay.Subtract(StartTime).TotalSeconds + "s";
             if (numberOfErrors != 0)
             {
                 eventType = EventLogEntryType.Error;
@@ -58,7 +60,7 @@ namespace ImageResizer_V2._0._03152016
             WriteToLog(results);
             WriteToEventLog("Log located at " + LogPath);
             WriteToEventLog(results);
-            EventLog.WriteEntry("Image Resizer", string.Join("\r\n", EventLogMessages.ToArray()), eventType);
+            EventLog.WriteEntry("Image Resizer", messages, eventType);
             results.WriteLine();
         }
 
@@ -67,5 +69,12 @@ namespace ImageResizer_V2._0._03152016
             if (!EventLog.SourceExists("Image Resizer"))
                 EventLog.CreateEventSource("Image Resizer", "Application");
         }
+
+        public static void WriteToEventLog(string message)
+        {
+            return;
+        }
+
+
     }
 }

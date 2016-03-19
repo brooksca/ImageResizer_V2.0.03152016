@@ -13,7 +13,6 @@ namespace ImageResizer_V2._0._03152016
         public string ServerName { get; set; }
         public string LocationCode { get; set; }
         public string FirmID { get; set; }
-        private const int ERROR_INVALID_LOCATION = 0xA0;
 
 #if !DEBUG
         public enum Locations { sch, mco, mmm, mpc, rbi, rbt, rcc, rda, rdz, rem, rho, rlp, rpd, rpo, rrs, rsi, rsz, rwm, rwmk, rwp, tcw };
@@ -55,7 +54,6 @@ namespace ImageResizer_V2._0._03152016
             {
                 Log.WriteToLog("Fatal Error: Location retrieval by host name failed. " + ex.Message);
                 Log.WriteToEventLog("Location Retrieval Attempt Failed");
-                Environment.Exit(ERROR_INVALID_LOCATION);
             }
         }
     }

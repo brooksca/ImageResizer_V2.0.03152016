@@ -22,6 +22,11 @@ namespace ImageResizer_V2._0._03152016
 
         static void Main(string[] args)
         {
+            HTMLLog.BeginLog();
+            HTMLLog.SaveLog();
+            ("HTML Log created").WriteLine();
+            Console.ReadKey();
+     
             options = new Options();
             parser = new Parser();
             Log.BeginLog();
@@ -91,7 +96,8 @@ namespace ImageResizer_V2._0._03152016
                         }
                         else
                         {
-                            ProcessImage(thisFile);
+                            Image ResizedImage = ResizeImage(thisFile);
+                            SaveImage(ResizedImage, thisFile);
                         }
                     }
                 }
@@ -104,44 +110,46 @@ namespace ImageResizer_V2._0._03152016
                 IterateOverFiles(subDirectory);
         }
 
-        private static void ProcessImage(FileToTransfer file)
+        private static Image ResizeImage(FileToTransfer file)
         {
-            Log.WriteToLog("Processing image: " + file.SourcePath);
-            Bitmap picture = (Bitmap)Image.FromFile(file.SourcePath);
-            Size newSize;
-            if (picture.Height <= options.PictureSize && picture.Width <= options.PictureSize)
-                newSize = new Size(picture.Width, picture.Height);
-            else
-                newSize = new Size(options.PictureSize, options.PictureSize);
-
-            Image ResizedImage = ImageResizer.Resize(picture, newSize);
-
-            if(ResizedImage == null)
+            try
+            {
+                Log.WriteToLog("Resizing image: " + file.SourcePath);
+                Bitmap picture = (Bitmap)Image.FromFile(file.SourcePath);
+                Size newSize;
+                if (picture.Height <= options.PictureSize && picture.Width <= options.PictureSize)
+                    newSize = new Size(picture.Width, picture.Height);
+                else
+                    newSize = new Size(options.PictureSize, options.PictureSize);
+                NumberOfFilesProcessed++;
+                return ImageResizer.Resize(picture, newSize);             
+            }
+            catch (Exception ex)
             {
                 NumberOfErrors++;
-                NumberOfFilesProcessed--;
-                picture.Dispose();
-                ResizedImage.Dispose();
-                return;
+                Log.WriteToLog("Error resizing image: " + ex.Message + " (" + file.SourcePath + ")");
+                return null;
             }
+        }
 
+        private static void SaveImage(Image resizedImage, FileToTransfer file)
+        {
             EncoderParameters encoderParameters = new EncoderParameters(1);
             encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 80L);
-
             try
             {
                 using (var memoryStream = new MemoryStream())
                 {
-                    ResizedImage.Save(memoryStream, file.EncoderInfo, encoderParameters);
+                    resizedImage.Save(memoryStream, file.EncoderInfo, encoderParameters);
                     var streamImage = Image.FromStream(memoryStream);
                     streamImage.Save(file.DestinationPath);
                 }
-                ResizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
+                resizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
                 ("Image resize/move successful").WriteLine();
                 Log.WriteToLog("Image resize/move successful: " + file.DestinationPath);
                 NumberOfFilesProcessed++;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ("Image resize/move failed: " + ex.Message).WriteLine();
                 Log.WriteToLog("Image resize/move failed: " + ex.Message + " (" + file.DestinationPath + ")");
@@ -149,8 +157,7 @@ namespace ImageResizer_V2._0._03152016
             }
             finally
             {
-                picture.Dispose();
-                ResizedImage.Dispose();
+                resizedImage.Dispose();
             }
         }
     }

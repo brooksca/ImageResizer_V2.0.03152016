@@ -50,8 +50,6 @@ namespace ImageResizer_V2._0._03152016
                 Log.WriteToEventLog("Directory not found: " + DestinationDirectory);
 #endif
             }
-            else
-                Log.WriteToLog("Destination path found: " + DestinationPath);
         }
 
         private ImageCodecInfo GetEncoderInfo()
