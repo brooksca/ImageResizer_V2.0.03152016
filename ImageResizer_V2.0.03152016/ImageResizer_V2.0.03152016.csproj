@@ -62,7 +62,6 @@
     <Compile Include="HTMLLog.cs" />
     <Compile Include="ImageResizer.cs" />
     <Compile Include="LocationFinder.cs" />
-    <Compile Include="Log.cs" />
     <Compile Include="LogMessage.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Program.cs" />

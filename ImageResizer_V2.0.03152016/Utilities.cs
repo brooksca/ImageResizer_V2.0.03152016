@@ -33,9 +33,8 @@ namespace ImageResizer_V2._0._03152016
             {
                 return new Ping().Send("schintranet").Status == IPStatus.Success;
             }
-            catch (Exception ex)
+            catch
             {
-                Log.WriteToLog("Ping error: " + ex.InnerException.Message);
                 return false;
             }
         }

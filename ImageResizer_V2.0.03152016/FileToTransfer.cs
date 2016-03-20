@@ -28,14 +28,14 @@ namespace ImageResizer_V2._0._03152016
 
         public FileToTransfer(string sourcePath, string firmID)
         {
-            SourcePath = sourcePath;
-            Extension = Path.GetExtension(SourcePath);
-            DestinationDirectory = Path.Combine(PathPrefix + "firm" + firmID.ToString() + PathSuffix + new FileInfo(sourcePath).Directory.Name);
-            DestinationPath = Path.Combine(DestinationDirectory, Path.GetFileName(sourcePath));
+            SourcePath =            sourcePath;
+            Extension =             Path.GetExtension(SourcePath);
+            DestinationDirectory =  Path.Combine(PathPrefix + "firm" + firmID.ToString() + PathSuffix + new FileInfo(sourcePath).Directory.Name);
+            DestinationPath =       Path.Combine(DestinationDirectory, Path.GetFileName(sourcePath));
             CheckDestination();
-            ExistsInDestination = File.Exists(DestinationPath);
-            LastWriteTime = File.GetLastWriteTime(SourcePath);
-            EncoderInfo = GetEncoderInfo();
+            ExistsInDestination =   File.Exists(DestinationPath);
+            LastWriteTime =         File.GetLastWriteTime(SourcePath);
+            EncoderInfo =           GetEncoderInfo();
         }
 
         protected void CheckDestination()
@@ -44,10 +44,14 @@ namespace ImageResizer_V2._0._03152016
             {
 #if DEBUG
                 Directory.CreateDirectory(DestinationDirectory);
-                Log.WriteToLog("Directory created: " + DestinationDirectory);
 #else
-                Log.WriteToLog("Directory not found: " + DestinationDirectory);
-                Log.WriteToEventLog("Directory not found: " + DestinationDirectory);
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Destination directory not found",
+                    Time = DateTime.Now,
+                    Type = MessageType.warning,
+                    Details = DestinationDirectory
+                });
 #endif
             }
         }

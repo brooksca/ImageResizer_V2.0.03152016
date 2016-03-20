@@ -1,6 +1,7 @@
 ﻿using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,25 +18,57 @@ namespace ImageResizer_V2._0._03152016
         private static string LogDirectory = @"D:\ImageResizer";
 #endif
         public static string FullLogPath = Path.Combine(LogDirectory, "ImageResizeLog.html");
-        public static TimeSpan StartTime;
+        public static DateTime StartTime;
         private static HtmlDocument HtmlLog;
         private static HtmlNode Head;
         private static HtmlNode Body;
         private static HtmlNode Table;
+        private static HtmlNode Html;
+        private static int Errors;
         public static void BeginLog()
         {
             if (!Directory.Exists(LogDirectory))
-                Directory.CreateDirectory(LogDirectory);
-            StartTime = DateTime.Now.TimeOfDay;
+                try
+                {
+                    Directory.CreateDirectory(LogDirectory);
+                }
+                catch (Exception ex)
+                {
+                    AddToLog(new LogMessage()
+                    {
+                        Message = "Could not create log directory",
+                        Time = DateTime.Now,
+                        Type = MessageType.error,
+                        Details = ex.Message
+                    });
+                    return;
+                }
+            StartTime = DateTime.Now;
+            HtmlLog = null;
+            Head = null;
+            Body = null;
             BeginHtml();           
         }
 
         private static void BeginHtml()
         {
             HtmlLog =                       new HtmlDocument();
-            HtmlNode html =                 HtmlNode.CreateNode("<html><head></head><body></body></html>");
-            Head =                          html.SelectSingleNode("//head");
-            Body =                          html.SelectSingleNode("//body");
+            Html =                          HtmlNode.CreateNode("<html></html>");
+            Head =                          HtmlNode.CreateNode("<head></head>");
+            Body =                          HtmlNode.CreateNode("<body></body>");
+            Table =                         HtmlNode.CreateNode("<table></table>");
+            HtmlNode cssLink = HtmlLog.CreateElement("link");
+
+            Body.AppendChild(HtmlNode.CreateNode("<h2>ImageResizer</h2>"));
+            Body.AppendChild(HtmlNode.CreateNode("<h6>Version 2.1.03192016"));
+            Body.AppendChild(HtmlNode.CreateNode("<h5>Report from " + DateTime.Now + " | Servername " +  "</h5>"));
+            Body.SetAttributeValue("class", "container-fluid");
+            Head.AppendChild(cssLink);
+            Table.SetAttributeValue("class", "table table-bordered table-condensed");
+            Table.SetAttributeValue("style", "font-size:10px");
+            cssLink.SetAttributeValue("rel", "stylesheet");
+            cssLink.SetAttributeValue("type", "text/css");
+            cssLink.SetAttributeValue("href", "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css");
 
             HtmlNode title =                HtmlNode.CreateNode("<title>ImageResizer Log - " + StartTime + "</title>");
             HtmlNode metaName =             HtmlNode.CreateNode("<meta name = \"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scaled=1\">");
@@ -44,25 +77,26 @@ namespace ImageResizer_V2._0._03152016
             HtmlNode metaCopyright =        HtmlNode.CreateNode("<meta name=\"copyright\" content=\"&copy; " + DateTime.Now.Year + " Allen Brooks. All Rights Reserved.\">");
             HtmlNode metaLanguage =         HtmlNode.CreateNode("<meta http-equiv=\"content-language\" content=\"en\">");
 
-            HtmlLog.DocumentNode.AppendChild(html);
+            Body.AppendChild(Table);
             Head.AppendChild(title);
             Head.AppendChild(metaName);
             Head.AppendChild(metaCompatibility);
             Head.AppendChild(metaContentType);
             Head.AppendChild(metaCopyright);
             Head.AppendChild(metaLanguage);
+            Html.AppendChild(Head);
+            Html.AppendChild(Body);
+            HtmlLog.DocumentNode.AppendChild(Html);
 
             CreateTable();
         }
 
         private static void CreateTable()
         {
-            Table =                         HtmlNode.CreateNode("<table border=\"1\" cellpadding=\"5\" cellspacing=\"5\"></table>");
             HtmlNode tableHeadRow =         HtmlNode.CreateNode("<tr></tr>");
-            HtmlNode tableHeadTime =        HtmlNode.CreateNode("<th>Time</th><th>Type</th><th>Message</th><th>Task</th><th>Source</th><th>Destination</th><th>Details</th>");
+            HtmlNode tableHeadTime =        HtmlNode.CreateNode("<th>Time</th><th>Type</th><th>Message</th><th>Source</th><th>Destination</th><th>Details</th>");
             HtmlNode tableHeadType =        HtmlNode.CreateNode("<th>Type</th>");
             HtmlNode tableHeadMessage =     HtmlNode.CreateNode("<th>Message</th>");
-            HtmlNode tableHeadTask =        HtmlNode.CreateNode("<th>Task</th>");
             HtmlNode tableHeadSource =      HtmlNode.CreateNode("<th>Source</th>");
             HtmlNode tableHeadDestination = HtmlNode.CreateNode("<th>Destination</th>");
             HtmlNode tableHeadDetails =     HtmlNode.CreateNode("<th>Details</th>");
@@ -70,11 +104,31 @@ namespace ImageResizer_V2._0._03152016
             tableHeadRow.AppendChild(tableHeadTime);
             tableHeadRow.AppendChild(tableHeadType);
             tableHeadRow.AppendChild(tableHeadMessage);
-            tableHeadRow.AppendChild(tableHeadTask);
             tableHeadRow.AppendChild(tableHeadSource);
             tableHeadRow.AppendChild(tableHeadDestination);
             tableHeadRow.AppendChild(tableHeadDetails);
             Table.AppendChild(tableHeadRow);
+        }
+
+        public static void AddToLog(LogMessage logMessage)
+        {
+            HtmlNode tableRow = HtmlNode.CreateNode("<tr></tr>");
+
+            HtmlNode timeCell =             HtmlNode.CreateNode("<td>" + logMessage.Time + "</td>");
+            HtmlNode typeCell =             HtmlNode.CreateNode("<td>" + logMessage.Type + "</td>");
+            HtmlNode messageCell =          HtmlNode.CreateNode("<td>" + logMessage.Message + "</td>");
+            HtmlNode sourceCell =           HtmlNode.CreateNode("<td></td>");
+            HtmlNode destinationCell =      HtmlNode.CreateNode("<td></td>");
+            HtmlNode detailsCell =          HtmlNode.CreateNode("<td>" + logMessage.Details??"no details" + "</td>");
+            tableRow.AppendChild(timeCell);
+            tableRow.AppendChild(typeCell);
+            tableRow.AppendChild(messageCell);
+            tableRow.AppendChild(sourceCell);
+            tableRow.AppendChild(destinationCell);
+            tableRow.AppendChild(detailsCell);
+            tableRow.SetAttributeValue("class", (logMessage.Type == MessageType.error ? "danger" : logMessage.Type.ToString()));
+            Table.AppendChild(tableRow);
+
         }
 
         public static void AddToLog(LogMessage logMessage, FileToTransfer file)
@@ -84,27 +138,59 @@ namespace ImageResizer_V2._0._03152016
             HtmlNode timeCell =             HtmlNode.CreateNode("<td>" + logMessage.Time + "</td>");
             HtmlNode typeCell =             HtmlNode.CreateNode("<td>" + logMessage.Type + "</td>");
             HtmlNode messageCell =          HtmlNode.CreateNode("<td>" + logMessage.Message + "</td>");
-            HtmlNode taskCell =             HtmlNode.CreateNode("<td>" + logMessage.Task + "</td>");
-            HtmlNode sourceCell =           HtmlNode.CreateNode("<td>" + file.SourcePath??"not available" + "</td>");
-            HtmlNode destinationCell =      HtmlNode.CreateNode("<td>" + file.DestinationPath??"not available" + "</td>");
-            HtmlNode detailsCell =          HtmlNode.CreateNode("<td>" + logMessage.Message??"not available" + "</td>");
-
+            HtmlNode sourceCell =           HtmlNode.CreateNode("<td>" + file.SourcePath + "</td>");
+            HtmlNode destinationCell =      HtmlNode.CreateNode("<td>" + file.DestinationPath + "</td>");
+            HtmlNode detailsCell =          HtmlNode.CreateNode("<td>" + logMessage.Details??"no details" + "</td>");
             tableRow.AppendChild(timeCell);
             tableRow.AppendChild(typeCell);
             tableRow.AppendChild(messageCell);
-            tableRow.AppendChild(taskCell);
             tableRow.AppendChild(sourceCell);
             tableRow.AppendChild(destinationCell);
             tableRow.AppendChild(detailsCell);
-
+            tableRow.SetAttributeValue("class", (logMessage.Type == MessageType.error ? "danger" : logMessage.Type.ToString()));
             Table.AppendChild(tableRow);
         }
 
-        public static void SaveLog()
+        public static void GenerateReportPanel(int errors, int skipped, int success)
         {
-            Body.AppendChild(Table);
+            Errors = errors;
+            HtmlNode resultsPanel = HtmlNode.CreateNode("<div></div>");
+            resultsPanel.SetAttributeValue("class", errors == 0 ? "panel panel-success" : "panel panel-danger");
+
+            HtmlNode panelHead = HtmlNode.CreateNode("<div></div>");
+            panelHead.SetAttributeValue("class", "panel-heading");
+
+            HtmlNode panelIcon = HtmlNode.CreateNode("<span></span>");
+            panelIcon.SetAttributeValue("class", "glyphicon " + (errors == 0 ? "glyphicon-ok" : "glyphicon-remove"));
+
+            HtmlNode panelTitle = HtmlNode.CreateNode("<h3> Success</h3>");
+            panelTitle.SetAttributeValue("class", "panel-title");
+            panelTitle.InnerHtml = errors == 0 ? " Success" : " Fail";
+            panelTitle.PrependChild(panelIcon);
+
+            HtmlNode panelBody = HtmlNode.CreateNode("<div></div>");
+            panelBody.SetAttributeValue("class", "panel-body");
+            TimeSpan processingTime = DateTime.Now.Subtract(StartTime);
+            panelBody.InnerHtml = "Successful " + success + " | Skipped " + skipped + " | Errors " + errors + " | Processing time " + processingTime.ToString(@"hh\:mm\:ss\.ff");
+
+            panelHead.AppendChild(panelTitle);
+            resultsPanel.AppendChild(panelHead);
+            resultsPanel.AppendChild(panelBody);
+            Body.InsertBefore(resultsPanel, Table);
+        }
+
+        public static void SaveAndClose()
+        {
+            HtmlNode bootstrapJavascript = HtmlLog.CreateElement("script");
+            bootstrapJavascript.SetAttributeValue("type", "text/javascript");
+            bootstrapJavascript.SetAttributeValue("href", "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js");
             StreamWriter writer = new StreamWriter(FullLogPath);
             HtmlLog.Save(writer);
+            if (!EventLog.SourceExists("Image Resizer"))
+                EventLog.CreateEventSource("Image Resizer", "Application");
+            string message = "Image Resizer completed " + (Errors == 0 ? "successfully" : "with errors") + " at " + DateTime.Now
+                + Environment.NewLine + "Log located at " + FullLogPath;
+            EventLog.WriteEntry("Image Resizer", message, (Errors == 0 ? EventLogEntryType.Information : EventLogEntryType.Error));
         }
     }
 }

@@ -8,6 +8,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Threading;
 
 namespace ImageResizer_V2._0._03152016
 {
@@ -22,14 +23,27 @@ namespace ImageResizer_V2._0._03152016
 
         static void Main(string[] args)
         {
-            HTMLLog.BeginLog();
-            HTMLLog.SaveLog();
-            ("HTML Log created").WriteLine();
-            Console.ReadKey();
-     
+            try
+            {
+                HTMLLog.BeginLog();
+            }
+            catch (Exception ex)
+            {
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Failed to create log",
+                    Time = DateTime.Now,
+                    Type = MessageType.error,
+                    Details = ex.Message + Environment.NewLine + "Use the -l parameter to ignore this error in the future."
+                });
+                HTMLLog.GenerateReportPanel(1, 0, 0);
+                HTMLLog.SaveAndClose();
+                "Couldn't create the log file. Use the -l parameter to ignore this error in the future.".WriteLine();
+                Thread.Sleep(2000);
+                Environment.Exit(-1);
+            }
             options = new Options();
             parser = new Parser();
-            Log.BeginLog();
             NumberOfFilesProcessed = 0;
             NumberOfFilesSkipped = 0;
             NumberOfErrors = 0;
@@ -42,11 +56,18 @@ namespace ImageResizer_V2._0._03152016
 #if !DEBUG
                 if (!Utilities.CheckDependencies())
                 {
-                    ("Schintranet not found on network. Are you sure you're connected to the IPS network?").WriteLine();
+                    ("Schintranet not found on network.").WriteLine();
                     ("Exiting...").WriteLine();
-                    Log.WriteToLog("Fatal error: Failed to ping schintranet");
-                    Log.WriteToEventLog("Fatal error: Failed to ping schintranet", EventLogEntryType.Error);
-                    Log.CloseWithErrors();
+                    HTMLLog.AddToLog(new LogMessage()
+                    {
+                        Message = "Fatal error",
+                        Time = DateTime.Now,
+                        Type = MessageType.error,
+                        Details = "Couldn't ping schintranet"
+                    });
+                    HTMLLog.GenerateReportPanel(1, 0, 0);
+                    HTMLLog.SaveAndClose();
+                    Thread.Sleep(2000);
                     Environment.Exit(-1);
                 }
 #endif
@@ -54,7 +75,8 @@ namespace ImageResizer_V2._0._03152016
                     IterateOverFiles(directory);
             }
             Console.WriteLine();
-            Log.CloseLog(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesProcessed);
+            HTMLLog.GenerateReportPanel(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesProcessed);
+            HTMLLog.SaveAndClose();
 
 #if DEBUG
             Utilities.PressAnyKeyToExit();
@@ -67,20 +89,30 @@ namespace ImageResizer_V2._0._03152016
             if (Directory.GetFiles(directory).Length == 0)
             {
                 ("No files found in directory: " + directory).WriteLine();
-                Log.WriteToLog("Directory empty: " + directory);
-                Log.WriteToEventLog("No files found in directory: " + directory);
+                LogMessage message = new LogMessage()
+                {
+                    Message = "Source directory empty",
+                    Time = DateTime.Now,
+                    Type = MessageType.warning,
+                    Details = directory
+                };
+                HTMLLog.AddToLog(message);
             }
             else
             {
                 "Beginning image resizing...".WriteLine();
-                Log.WriteToLog("Beginning image resizing...");
                 foreach (string file in Directory.GetFiles(directory))
                 {
                     FileToTransfer thisFile = new FileToTransfer(file, Location.FirmID);
                     if (!options.ProcessOldFiles && thisFile.LastWriteTime < DateTime.Today.AddMonths(-1))
                     {
                         ("Skipping old file: " + thisFile.SourcePath).WriteLine();
-                        Log.WriteToLog("Old file skipped (write date: " + thisFile.LastWriteTime + "): " + thisFile.SourcePath);
+                        HTMLLog.AddToLog(new LogMessage()
+                        {
+                            Message = "Old file skipped",
+                            Time = DateTime.Now,
+                            Type = MessageType.info
+                        }, thisFile);
                         NumberOfFilesSkipped++;
                         continue;
                     }
@@ -90,7 +122,13 @@ namespace ImageResizer_V2._0._03152016
                         if (thisFile.ExistsInDestination)
                         {
                             ("File exists in destination: " + thisFile.SourcePath).WriteLine();
-                            Log.WriteToLog("File exists in destination: " + thisFile.DestinationPath + " | (Destination: " + thisFile.DestinationPath + ")");
+                            HTMLLog.AddToLog(new LogMessage()
+                            {
+                                Message = "File exists in destination",
+                                Time = DateTime.Now,
+                                Type = MessageType.info
+                            }, thisFile);
+
                             NumberOfFilesSkipped++;
                             continue;
                         }
@@ -106,15 +144,28 @@ namespace ImageResizer_V2._0._03152016
 
         private static void IterateThroughDirectories(string directory)
         {
-            foreach(string subDirectory in Directory.GetDirectories(directory))
-                IterateOverFiles(subDirectory);
+            foreach (string subDirectory in Directory.GetDirectories(directory))
+            {
+                if (Directory.GetLastWriteTime(directory) < DateTime.Now.AddMonths(-1))
+                {
+                    HTMLLog.AddToLog(new LogMessage()
+                    {
+                        Message = "Old directory skipped",
+                        Time = DateTime.Now,
+                        Type = MessageType.info,
+                        Details = "Directory hasn't been accessed in the last month."
+                    });
+                    return;
+                }
+                else
+                    IterateOverFiles(subDirectory);
+            }
         }
 
         private static Image ResizeImage(FileToTransfer file)
         {
             try
             {
-                Log.WriteToLog("Resizing image: " + file.SourcePath);
                 Bitmap picture = (Bitmap)Image.FromFile(file.SourcePath);
                 Size newSize;
                 if (picture.Height <= options.PictureSize && picture.Width <= options.PictureSize)
@@ -127,7 +178,13 @@ namespace ImageResizer_V2._0._03152016
             catch (Exception ex)
             {
                 NumberOfErrors++;
-                Log.WriteToLog("Error resizing image: " + ex.Message + " (" + file.SourcePath + ")");
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Error resizing image",
+                    Time = DateTime.Now,
+                    Type = MessageType.error,
+                    Details = ex.Message
+                }, file);
                 return null;
             }
         }
@@ -146,13 +203,24 @@ namespace ImageResizer_V2._0._03152016
                 }
                 resizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
                 ("Image resize/move successful").WriteLine();
-                Log.WriteToLog("Image resize/move successful: " + file.DestinationPath);
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Image resize/move successful",
+                    Time = DateTime.Now,
+                    Type = MessageType.success
+                }, file);
                 NumberOfFilesProcessed++;
             }
             catch (Exception ex)
             {
                 ("Image resize/move failed: " + ex.Message).WriteLine();
-                Log.WriteToLog("Image resize/move failed: " + ex.Message + " (" + file.DestinationPath + ")");
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Image resize/move failed",
+                    Time = DateTime.Now,
+                    Type = MessageType.error,
+                    Details = ex.Message
+                }, file);
                 NumberOfErrors++;
             }
             finally

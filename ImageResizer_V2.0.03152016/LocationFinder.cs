@@ -13,7 +13,6 @@ namespace ImageResizer_V2._0._03152016
         public string ServerName { get; set; }
         public string LocationCode { get; set; }
         public string FirmID { get; set; }
-
 #if !DEBUG
         public enum Locations { sch, mco, mmm, mpc, rbi, rbt, rcc, rda, rdz, rem, rho, rlp, rpd, rpo, rrs, rsi, rsz, rwm, rwmk, rwp, tcw };
 #else
@@ -22,16 +21,29 @@ namespace ImageResizer_V2._0._03152016
 
         public LocationFinder()
         {
-            ServerName = Environment.MachineName;
-            LocationCode = ServerName.Substring(0, 3).ToLower();
+            ServerName =        Environment.MachineName;
+            LocationCode =      ServerName.Substring(0, 3).ToLower();
             try
             {
                 FirmID = ((int)Enum.Parse(typeof(Locations), LocationCode)).ToString().PadLeft(2, '0');
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Firm ID set",
+                    Time = DateTime.Now,
+                    Type = MessageType.success,
+                    Details = "Value= " + ServerName
+                });
             }
             catch (Exception ex)
             {
-                Log.WriteToLog("Location retrieval by machine name failed: " + ex.Message);
-                Log.WriteToEventLog("Location Retrieval Attempt Failed");
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Location retrieval failed",
+                    Time = DateTime.Now,
+                    Type = MessageType.warning,
+                    Details = ex.Message
+                });
+
                 GetLocationByHostname();
             }
             ("Running on: " + ServerName).WriteLine();
@@ -42,18 +54,28 @@ namespace ImageResizer_V2._0._03152016
 
         private void GetLocationByHostname()
         {
-            Log.WriteToLog("Attempting location retrieval by hostname.");
-            string hostname = Dns.GetHostName();
-            Log.WriteToLog("Host name set to: " + hostname);
-            LocationCode = hostname.Substring(0, 3);
+            string hostname =       Dns.GetHostName();
+            LocationCode =          hostname.Substring(0, 3);
             try
             {
                 FirmID = ((int)Enum.Parse(typeof(Locations), LocationCode)).ToString().PadLeft(2, '0');
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Firm ID set",
+                    Time = DateTime.Now,
+                    Type = MessageType.success,
+                    Details = "Value= " + hostname
+                });
             }
             catch(Exception ex)
             {
-                Log.WriteToLog("Fatal Error: Location retrieval by host name failed. " + ex.Message);
-                Log.WriteToEventLog("Location Retrieval Attempt Failed");
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Location retrieval failed",
+                    Time = DateTime.Now,
+                    Type = MessageType.error,
+                    Details = ex.Message
+                });
             }
         }
     }

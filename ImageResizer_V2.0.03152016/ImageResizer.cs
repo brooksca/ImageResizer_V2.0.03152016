@@ -18,18 +18,18 @@ namespace ImageResizer_V2._0._03152016
 
             try
             {
-                int sourceWidth = image.Width;
-                int sourceHeight = image.Height;
+                int sourceWidth =           image.Width;
+                int sourceHeight =          image.Height;
 
-                float WidthScaling = ((float)size.Width / (float)sourceWidth);
-                float HeightScaling = ((float)size.Height / (float)sourceHeight);
-                float ScalingValue = HeightScaling < WidthScaling ? HeightScaling : WidthScaling;
+                float WidthScaling =        ((float)size.Width / (float)sourceWidth);
+                float HeightScaling =       ((float)size.Height / (float)sourceHeight);
+                float ScalingValue =        HeightScaling < WidthScaling ? HeightScaling : WidthScaling;
 
-                int destinationWidth = (int)(sourceWidth * ScalingValue);
-                int destinationHeight = (int)(sourceHeight * ScalingValue);
+                int destinationWidth =      (int)(sourceWidth * ScalingValue);
+                int destinationHeight =     (int)(sourceHeight * ScalingValue);
 
-                Bitmap bitmap = new Bitmap(destinationWidth, destinationHeight);
-                Graphics graphics = Graphics.FromImage((Image)bitmap);
+                Bitmap bitmap =             new Bitmap(destinationWidth, destinationHeight);
+                Graphics graphics =         Graphics.FromImage((Image)bitmap);
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 graphics.DrawImage(image, 0, 0, destinationWidth, destinationHeight);
                 graphics.Dispose();
@@ -38,7 +38,13 @@ namespace ImageResizer_V2._0._03152016
             catch (Exception ex)
             {
                 ("Image resize failed. Moving to next file.").WriteLine();
-                Log.WriteToLog("Image resizing failed: " + ex.Message);
+                HTMLLog.AddToLog(new LogMessage()
+                {
+                    Message = "Image resizing failed",
+                    Time = DateTime.Now,
+                    Type = MessageType.error,
+                    Details = ex.Message
+                });
                 return null;
             }
         }
