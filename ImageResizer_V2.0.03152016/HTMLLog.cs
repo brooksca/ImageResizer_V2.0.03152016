@@ -18,7 +18,8 @@ namespace ImageResizer_V2._0._03152016
         private static string LogDirectory = @"D:\ImageResizer";
 #endif
         public static string FullLogPath = Path.Combine(LogDirectory, "ImageResizeLog.html");
-        public static DateTime StartTime;
+        private static DateTime StartTime;
+        public static LocationFinder Location { get; set; }
         private static HtmlDocument HtmlLog;
         private static HtmlNode Head;
         private static HtmlNode Body;
@@ -61,7 +62,7 @@ namespace ImageResizer_V2._0._03152016
 
             Body.AppendChild(HtmlNode.CreateNode("<h2>ImageResizer</h2>"));
             Body.AppendChild(HtmlNode.CreateNode("<h6>Version 2.1.03192016"));
-            Body.AppendChild(HtmlNode.CreateNode("<h5>Report from " + DateTime.Now + " | Servername " +  "</h5>"));
+            Body.AppendChild(HtmlNode.CreateNode("<h5>Report from " + DateTime.Now + "</h5>"));
             Body.SetAttributeValue("class", "container-fluid");
             Head.AppendChild(cssLink);
             Table.SetAttributeValue("class", "table table-bordered table-condensed");
@@ -113,7 +114,6 @@ namespace ImageResizer_V2._0._03152016
         public static void AddToLog(LogMessage logMessage)
         {
             HtmlNode tableRow = HtmlNode.CreateNode("<tr></tr>");
-
             HtmlNode timeCell =             HtmlNode.CreateNode("<td>" + logMessage.Time + "</td>");
             HtmlNode typeCell =             HtmlNode.CreateNode("<td>" + logMessage.Type + "</td>");
             HtmlNode messageCell =          HtmlNode.CreateNode("<td>" + logMessage.Message + "</td>");
@@ -134,13 +134,18 @@ namespace ImageResizer_V2._0._03152016
         public static void AddToLog(LogMessage logMessage, FileToTransfer file)
         {
             HtmlNode tableRow = HtmlNode.CreateNode("<tr></tr>");
-
             HtmlNode timeCell =             HtmlNode.CreateNode("<td>" + logMessage.Time + "</td>");
             HtmlNode typeCell =             HtmlNode.CreateNode("<td>" + logMessage.Type + "</td>");
             HtmlNode messageCell =          HtmlNode.CreateNode("<td>" + logMessage.Message + "</td>");
-            HtmlNode sourceCell =           HtmlNode.CreateNode("<td>" + file.SourcePath + "</td>");
-            HtmlNode destinationCell =      HtmlNode.CreateNode("<td>" + file.DestinationPath + "</td>");
+            HtmlNode sourceCell =           HtmlNode.CreateNode("<td></td>");
+            HtmlNode sourceLink =           HtmlNode.CreateNode("<a>" + file.SourcePath + "</a>");
+            HtmlNode destinationCell =      HtmlNode.CreateNode("<td></td>");
+            HtmlNode destinationLink =      HtmlNode.CreateNode("<a>" + file.DestinationPath + "</a>");
             HtmlNode detailsCell =          HtmlNode.CreateNode("<td>" + logMessage.Details??"no details" + "</td>");
+            sourceLink.SetAttributeValue("href", "file:///" + file.SourcePath);
+            destinationLink.SetAttributeValue("href", "file:///" + file.DestinationPath);
+            sourceCell.AppendChild(sourceLink);
+            destinationCell.AppendChild(destinationLink);
             tableRow.AppendChild(timeCell);
             tableRow.AppendChild(typeCell);
             tableRow.AppendChild(messageCell);
@@ -163,7 +168,7 @@ namespace ImageResizer_V2._0._03152016
             HtmlNode panelIcon = HtmlNode.CreateNode("<span></span>");
             panelIcon.SetAttributeValue("class", "glyphicon " + (errors == 0 ? "glyphicon-ok" : "glyphicon-remove"));
 
-            HtmlNode panelTitle = HtmlNode.CreateNode("<h3> Success</h3>");
+            HtmlNode panelTitle = HtmlNode.CreateNode("<h3></h3>");
             panelTitle.SetAttributeValue("class", "panel-title");
             panelTitle.InnerHtml = errors == 0 ? " Success" : " Fail";
             panelTitle.PrependChild(panelIcon);
@@ -171,7 +176,9 @@ namespace ImageResizer_V2._0._03152016
             HtmlNode panelBody = HtmlNode.CreateNode("<div></div>");
             panelBody.SetAttributeValue("class", "panel-body");
             TimeSpan processingTime = DateTime.Now.Subtract(StartTime);
-            panelBody.InnerHtml = "Successful " + success + " | Skipped " + skipped + " | Errors " + errors + " | Processing time " + processingTime.ToString(@"hh\:mm\:ss\.ff");
+            panelBody.AppendChild(HtmlNode.CreateNode("<p>Server name: " + Location.ServerName.ToLower() + "</p>"));
+            panelBody.AppendChild(HtmlNode.CreateNode("<p>Firm ID: " + Location.FirmID + "</p>"));
+            panelBody.AppendChild(HtmlNode.CreateNode("<p>Successful " + success + " | Skipped " + skipped + " | Errors " + errors + " | Processing time " + processingTime.ToString(@"hh\:mm\:ss\.ff") + "</p>"));
 
             panelHead.AppendChild(panelTitle);
             resultsPanel.AppendChild(panelHead);

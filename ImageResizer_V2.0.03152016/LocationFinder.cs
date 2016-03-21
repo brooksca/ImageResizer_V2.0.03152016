@@ -14,7 +14,7 @@ namespace ImageResizer_V2._0._03152016
         public string LocationCode { get; set; }
         public string FirmID { get; set; }
 #if !DEBUG
-        public enum Locations { sch, mco, mmm, mpc, rbi, rbt, rcc, rda, rdz, rem, rho, rlp, rpd, rpo, rrs, rsi, rsz, rwm, rwmk, rwp, tcw };
+        public enum Locations { rcc=1, rbi=2, rsz=3, rpd=4, rlp=5, rwp=6, rsi=7, rho=8, rdz=9, rrs=10, rpo=11, sch=12, rem=15, tcw=16, mpc=17, mco=18, mmm=19, mcr=20, rbt=22, rda=26, rwm=23 };
 #else
         public enum Locations { abr, all, uss };
 #endif

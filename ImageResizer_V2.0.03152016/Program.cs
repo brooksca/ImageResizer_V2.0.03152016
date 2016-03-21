@@ -23,25 +23,6 @@ namespace ImageResizer_V2._0._03152016
 
         static void Main(string[] args)
         {
-            try
-            {
-                HTMLLog.BeginLog();
-            }
-            catch (Exception ex)
-            {
-                HTMLLog.AddToLog(new LogMessage()
-                {
-                    Message = "Failed to create log",
-                    Time = DateTime.Now,
-                    Type = MessageType.error,
-                    Details = ex.Message + Environment.NewLine + "Use the -l parameter to ignore this error in the future."
-                });
-                HTMLLog.GenerateReportPanel(1, 0, 0);
-                HTMLLog.SaveAndClose();
-                "Couldn't create the log file. Use the -l parameter to ignore this error in the future.".WriteLine();
-                Thread.Sleep(2000);
-                Environment.Exit(-1);
-            }
             options = new Options();
             parser = new Parser();
             NumberOfFilesProcessed = 0;
@@ -52,7 +33,10 @@ namespace ImageResizer_V2._0._03152016
             {
                 if (!Directory.Exists(options.Directory))
                     Directory.CreateDirectory(options.Directory);
+                HTMLLog.BeginLog();
                 Location = new LocationFinder();
+                HTMLLog.Location = Location;
+                
 #if !DEBUG
                 if (!Utilities.CheckDependencies())
                 {
@@ -80,6 +64,7 @@ namespace ImageResizer_V2._0._03152016
 
 #if DEBUG
             Utilities.PressAnyKeyToExit();
+            Process.Start(@"C:\ImageResizer\ImageResizeLog.html");
 #endif
         }
 
@@ -88,7 +73,6 @@ namespace ImageResizer_V2._0._03152016
             IterateThroughDirectories(directory);
             if (Directory.GetFiles(directory).Length == 0)
             {
-                ("No files found in directory: " + directory).WriteLine();
                 LogMessage message = new LogMessage()
                 {
                     Message = "Source directory empty",
@@ -100,13 +84,12 @@ namespace ImageResizer_V2._0._03152016
             }
             else
             {
-                "Beginning image resizing...".WriteLine();
                 foreach (string file in Directory.GetFiles(directory))
                 {
+                    Console.Write("\rResults: " + NumberOfFilesProcessed + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors");
                     FileToTransfer thisFile = new FileToTransfer(file, Location.FirmID);
                     if (!options.ProcessOldFiles && thisFile.LastWriteTime < DateTime.Today.AddMonths(-1))
                     {
-                        ("Skipping old file: " + thisFile.SourcePath).WriteLine();
                         HTMLLog.AddToLog(new LogMessage()
                         {
                             Message = "Old file skipped",
@@ -121,7 +104,6 @@ namespace ImageResizer_V2._0._03152016
                     {
                         if (thisFile.ExistsInDestination)
                         {
-                            ("File exists in destination: " + thisFile.SourcePath).WriteLine();
                             HTMLLog.AddToLog(new LogMessage()
                             {
                                 Message = "File exists in destination",
@@ -172,7 +154,6 @@ namespace ImageResizer_V2._0._03152016
                     newSize = new Size(picture.Width, picture.Height);
                 else
                     newSize = new Size(options.PictureSize, options.PictureSize);
-                NumberOfFilesProcessed++;
                 return ImageResizer.Resize(picture, newSize);             
             }
             catch (Exception ex)
@@ -202,7 +183,6 @@ namespace ImageResizer_V2._0._03152016
                     streamImage.Save(file.DestinationPath);
                 }
                 resizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
-                ("Image resize/move successful").WriteLine();
                 HTMLLog.AddToLog(new LogMessage()
                 {
                     Message = "Image resize/move successful",
@@ -213,7 +193,6 @@ namespace ImageResizer_V2._0._03152016
             }
             catch (Exception ex)
             {
-                ("Image resize/move failed: " + ex.Message).WriteLine();
                 HTMLLog.AddToLog(new LogMessage()
                 {
                     Message = "Image resize/move failed",
