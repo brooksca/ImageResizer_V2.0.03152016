@@ -117,8 +117,8 @@ namespace ImageResizer_V2._0._03152016
             HtmlNode timeCell =             HtmlNode.CreateNode("<td>" + logMessage.Time + "</td>");
             HtmlNode typeCell =             HtmlNode.CreateNode("<td>" + logMessage.Type + "</td>");
             HtmlNode messageCell =          HtmlNode.CreateNode("<td>" + logMessage.Message + "</td>");
-            HtmlNode sourceCell =           HtmlNode.CreateNode("<td></td>");
-            HtmlNode destinationCell =      HtmlNode.CreateNode("<td></td>");
+            HtmlNode sourceCell =           HtmlNode.CreateNode("<td>not availabe</td>");
+            HtmlNode destinationCell =      HtmlNode.CreateNode("<td>not available</td>");
             HtmlNode detailsCell =          HtmlNode.CreateNode("<td>" + logMessage.Details??"no details" + "</td>");
             tableRow.AppendChild(timeCell);
             tableRow.AppendChild(typeCell);
