@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace ImageResizer_V2._0._03152016
 {
@@ -17,20 +18,48 @@ namespace ImageResizer_V2._0._03152016
         private static Options options;
         private static Parser parser;
         private static LocationFinder Location;
-        private static int NumberOfFilesProcessed;
+        private static int NumberOfFilesSuccessful;
         private static int NumberOfFilesSkipped;
         private static int NumberOfErrors;
+        private static int TotalNumberOfFilesToBeProcessed;
+        private static int TotalNumberOfFilesProcessed;
+
+        [DllImport("Kernel32")]
+        private static extern bool SetConsoleCtrlHandler(EventHandler exitHandler, bool add);
+        private delegate bool EventHandler(CtrlType sig);
+        static EventHandler _handler;
+        enum CtrlType { CTRL_C_EVENT = 0, CTRL_BREAK_EVENT = 1, CTRL_CLOSE_EVENT = 2, CTRL_LOGOFF_EVENT = 5, CTRL_SHUTDOWN_EVENT = 6 }
+
+        private static bool Handler(CtrlType sig)
+        {
+            HTMLLog.AddToLog(new LogMessage()
+            {
+                Message = "User shutdown",
+                Time = DateTime.Now,
+                Type = MessageType.error,
+                Details = "User cancelled operation"
+            });
+            HTMLLog.GenerateReportPanel(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesSuccessful);
+            HTMLLog.SaveAndClose();
+            Thread.Sleep(2000);
+            Environment.Exit(-1);
+            return true;
+        }
 
         static void Main(string[] args)
         {
             options = new Options();
             parser = new Parser();
-            NumberOfFilesProcessed = 0;
+            NumberOfFilesSuccessful = 0;
             NumberOfFilesSkipped = 0;
             NumberOfErrors = 0;
 
+            _handler += new EventHandler(Handler);
+            SetConsoleCtrlHandler(_handler, true);
+
             if (CommandLine.Parser.Default.ParseArguments(args, options))
             {
+                GetFileCount();
                 if (!Directory.Exists(options.Directory))
                     Directory.CreateDirectory(options.Directory);
                 HTMLLog.BeginLog();
@@ -54,12 +83,21 @@ namespace ImageResizer_V2._0._03152016
                     Thread.Sleep(2000);
                     Environment.Exit(-1);
                 }
+                else
+                {
+                    HTMLLog.AddToLog(new LogMessage()
+                    {
+                        Message = "Schintranet found",
+                        Time = DateTime.Now,
+                        Type = MessageType.success,
+                        Details = "Successfully pinged schintranet"
+                    });
+                }
 #endif
-                foreach (string directory in Directory.GetDirectories(options.Directory))
-                    IterateOverFiles(directory);
+                IterateThroughDirectories(options.Directory);
             }
             Console.WriteLine();
-            HTMLLog.GenerateReportPanel(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesProcessed);
+            HTMLLog.GenerateReportPanel(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesSuccessful);
             HTMLLog.SaveAndClose();
 
 #if DEBUG
@@ -68,79 +106,98 @@ namespace ImageResizer_V2._0._03152016
 #endif
         }
 
+        private static void GetFileCount()
+        {
+            "getting file count...".Write();
+            DirectoryInfo directoryInfo = new DirectoryInfo(options.Directory);
+            var directories = (from f in directoryInfo.GetDirectories()
+                                  where f.LastWriteTime > DateTime.Now.AddDays(-14)
+                                  orderby f.LastWriteTime descending
+                                  select f);
+            int directoryCount = directories.Count();
+            TotalNumberOfFilesToBeProcessed = 0;
+            foreach (DirectoryInfo directory in directories)
+                TotalNumberOfFilesToBeProcessed += directory.GetFiles().Length;
+            TotalNumberOfFilesToBeProcessed.ToString().WriteLine();
+            Console.ReadKey();
+        }
+
         private static void IterateOverFiles(string directory)
         {
-            IterateThroughDirectories(directory);
+            "files".WriteLine();
+            Console.ReadKey();
+            foreach (string subDirectory in Directory.GetDirectories(directory))
+            {
+                "subdir found".WriteLine();
+                Console.ReadKey();
+                IterateThroughDirectories(subDirectory);
+            }
             if (Directory.GetFiles(directory).Length == 0)
             {
-                LogMessage message = new LogMessage()
-                {
-                    Message = "Source directory empty",
-                    Time = DateTime.Now,
-                    Type = MessageType.warning,
-                    Details = directory
-                };
-                HTMLLog.AddToLog(message);
+                "directory is empty".WriteLine();
+                Console.ReadKey();
+                return;
             }
             else
-            {
-                foreach (string file in Directory.GetFiles(directory))
+                foreach (string file in (from f in Directory.GetFiles(directory)
+                                         where File.GetLastWriteTime(f) > DateTime.Now.AddDays(-14)
+                                         select f))
                 {
-                    Console.Write("\rResults: " + NumberOfFilesProcessed + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors");
+                    "directory is not empty".WriteLine();
+                    Console.ReadKey();
+                    Console.Write("\rResults: " + NumberOfFilesSuccessful + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors | " + Math.Round(((double)((double)TotalNumberOfFilesProcessed / (double)TotalNumberOfFilesToBeProcessed * 100)), 1) + "%");
                     FileToTransfer thisFile = new FileToTransfer(file, Location.FirmID);
-                    if (!options.ProcessOldFiles && thisFile.LastWriteTime < DateTime.Today.AddMonths(-1))
-                    {
-                        HTMLLog.AddToLog(new LogMessage()
-                        {
-                            Message = "Old file skipped",
-                            Time = DateTime.Now,
-                            Type = MessageType.info
-                        }, thisFile);
-                        NumberOfFilesSkipped++;
-                        continue;
-                    }
-
                     if (FileTypes.ImageFileTypes.Contains(thisFile.Extension))
                     {
+                        "file is an image".WriteLine();
+                        Console.ReadKey();
                         if (thisFile.ExistsInDestination)
                         {
-                            HTMLLog.AddToLog(new LogMessage()
-                            {
-                                Message = "File exists in destination",
-                                Time = DateTime.Now,
-                                Type = MessageType.info
-                            }, thisFile);
-
+                            "file exists".WriteLine();
+                            Console.ReadKey();
+                            TotalNumberOfFilesProcessed++;
                             NumberOfFilesSkipped++;
                             continue;
                         }
                         else
                         {
+                            "processing".WriteLine();
+                            Console.ReadKey();
                             Image ResizedImage = ResizeImage(thisFile);
                             SaveImage(ResizedImage, thisFile);
                         }
                     }
                 }
-            }
         }
 
         private static void IterateThroughDirectories(string directory)
         {
-            foreach (string subDirectory in Directory.GetDirectories(directory))
+            var directories = (from d in Directory.GetDirectories(directory)
+                                    where Directory.GetLastWriteTime(directory) > DateTime.Now.AddDays(-14)
+                                    select d);
+
+            foreach (string subDirectory in directories)
             {
-                if (Directory.GetLastWriteTime(directory) < DateTime.Now.AddMonths(-1))
+                string destinationDirectory = Path.Combine(@"\\schintranet\acs\acs\firms\firm" + Location.FirmID + @"\images\jobs\", new DirectoryInfo(subDirectory).Name);
+                Console.Write("\rResults: " + NumberOfFilesSuccessful + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors | " + Math.Round(((double)((double)TotalNumberOfFilesProcessed / (double)TotalNumberOfFilesToBeProcessed * 100)), 1) + "%");
+                if (!Directory.Exists(destinationDirectory))
                 {
+                    "if".WriteLine();
                     HTMLLog.AddToLog(new LogMessage()
                     {
-                        Message = "Old directory skipped",
+                        Message = "Directory not found in destination",
                         Time = DateTime.Now,
-                        Type = MessageType.info,
-                        Details = "Directory hasn't been accessed in the last month."
+                        Type = MessageType.warning,
+                        Details = destinationDirectory
                     });
-                    return;
+                    TotalNumberOfFilesProcessed += Directory.GetFiles(directory).Length;
+                    continue;
                 }
                 else
+                {
+                    "else".WriteLine();
                     IterateOverFiles(subDirectory);
+                }
             }
         }
 
@@ -159,6 +216,7 @@ namespace ImageResizer_V2._0._03152016
             catch (Exception ex)
             {
                 NumberOfErrors++;
+                TotalNumberOfFilesProcessed++;
                 HTMLLog.AddToLog(new LogMessage()
                 {
                     Message = "Error resizing image",
@@ -182,14 +240,8 @@ namespace ImageResizer_V2._0._03152016
                     var streamImage = Image.FromStream(memoryStream);
                     streamImage.Save(file.DestinationPath);
                 }
-                resizedImage.Save(file.DestinationPath, file.EncoderInfo, encoderParameters);
-                HTMLLog.AddToLog(new LogMessage()
-                {
-                    Message = "Image resize/move successful",
-                    Time = DateTime.Now,
-                    Type = MessageType.success
-                }, file);
-                NumberOfFilesProcessed++;
+                NumberOfFilesSuccessful++;
+                TotalNumberOfFilesProcessed++;
             }
             catch (Exception ex)
             {
@@ -201,6 +253,7 @@ namespace ImageResizer_V2._0._03152016
                     Details = ex.Message
                 }, file);
                 NumberOfErrors++;
+                TotalNumberOfFilesProcessed++;
             }
             finally
             {
