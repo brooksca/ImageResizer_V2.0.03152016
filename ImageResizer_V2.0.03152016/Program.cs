@@ -36,7 +36,7 @@ namespace ImageResizer_V2._0._03152016
                 HTMLLog.BeginLog();
                 Location = new LocationFinder();
                 HTMLLog.Location = Location;
-                
+
 #if !DEBUG
                 if (!Utilities.CheckDependencies())
                 {
@@ -55,17 +55,13 @@ namespace ImageResizer_V2._0._03152016
                     Environment.Exit(-1);
                 }
 #endif
-                foreach (string directory in Directory.GetDirectories(options.Directory))
-                    IterateOverFiles(directory);
+                IterateThroughDirectories(options.Directory);
             }
             Console.WriteLine();
             HTMLLog.GenerateReportPanel(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesProcessed);
             HTMLLog.SaveAndClose();
 
-#if DEBUG
             Utilities.PressAnyKeyToExit();
-            Process.Start(@"C:\ImageResizer\ImageResizeLog.html");
-#endif
         }
 
         private static void IterateOverFiles(string directory)
@@ -73,29 +69,17 @@ namespace ImageResizer_V2._0._03152016
             IterateThroughDirectories(directory);
             if (Directory.GetFiles(directory).Length == 0)
             {
-                LogMessage message = new LogMessage()
-                {
-                    Message = "Source directory empty",
-                    Time = DateTime.Now,
-                    Type = MessageType.warning,
-                    Details = directory
-                };
-                HTMLLog.AddToLog(message);
+                return;
             }
             else
             {
-                foreach (string file in Directory.GetFiles(directory))
+                foreach (string file in Directory.GetFiles(directory)
+                    .Where(f => File.GetLastWriteTime(f) > DateTime.Now.AddDays(-7)))
                 {
                     Console.Write("\rResults: " + NumberOfFilesProcessed + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors");
                     FileToTransfer thisFile = new FileToTransfer(file, Location.FirmID);
-                    if (!options.ProcessOldFiles && thisFile.LastWriteTime < DateTime.Today.AddMonths(-1))
+                    if (thisFile.LastWriteTime < DateTime.Today.AddDays(-14))
                     {
-                        HTMLLog.AddToLog(new LogMessage()
-                        {
-                            Message = "Old file skipped",
-                            Time = DateTime.Now,
-                            Type = MessageType.info
-                        }, thisFile);
                         NumberOfFilesSkipped++;
                         continue;
                     }
@@ -104,13 +88,6 @@ namespace ImageResizer_V2._0._03152016
                     {
                         if (thisFile.ExistsInDestination)
                         {
-                            HTMLLog.AddToLog(new LogMessage()
-                            {
-                                Message = "File exists in destination",
-                                Time = DateTime.Now,
-                                Type = MessageType.info
-                            }, thisFile);
-
                             NumberOfFilesSkipped++;
                             continue;
                         }
@@ -126,22 +103,8 @@ namespace ImageResizer_V2._0._03152016
 
         private static void IterateThroughDirectories(string directory)
         {
-            foreach (string subDirectory in Directory.GetDirectories(directory))
-            {
-                if (Directory.GetLastWriteTime(directory) < DateTime.Now.AddMonths(-1))
-                {
-                    HTMLLog.AddToLog(new LogMessage()
-                    {
-                        Message = "Old directory skipped",
-                        Time = DateTime.Now,
-                        Type = MessageType.info,
-                        Details = "Directory hasn't been accessed in the last month."
-                    });
-                    return;
-                }
-                else
-                    IterateOverFiles(subDirectory);
-            }
+            foreach (string subDirectory in Directory.GetDirectories(directory).Where(s => Directory.GetLastWriteTime(s) > DateTime.Now.AddDays(-14)))
+                IterateOverFiles(subDirectory);
         }
 
         private static Image ResizeImage(FileToTransfer file)
@@ -195,7 +158,7 @@ namespace ImageResizer_V2._0._03152016
             {
                 HTMLLog.AddToLog(new LogMessage()
                 {
-                    Message = "Image resize/move failed",
+                    Message = "Failed to save file",
                     Time = DateTime.Now,
                     Type = MessageType.error,
                     Details = ex.Message
