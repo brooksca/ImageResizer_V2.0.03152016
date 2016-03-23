@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
@@ -13,6 +14,11 @@ namespace ImageResizer_V2._0._03152016
         public static void WriteLine(this string message)
         {
             Console.WriteLine(message);
+        }
+
+        public static bool DirectoryIsEmpty(string pathToDirectory)
+        {
+            return !Directory.EnumerateFileSystemEntries(pathToDirectory).Any();
         }
 
         public static void Write(this string message)

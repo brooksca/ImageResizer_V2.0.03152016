@@ -32,28 +32,9 @@ namespace ImageResizer_V2._0._03152016
             Extension =             Path.GetExtension(SourcePath);
             DestinationDirectory =  Path.Combine(PathPrefix + "firm" + firmID.ToString() + PathSuffix + new FileInfo(sourcePath).Directory.Name);
             DestinationPath =       Path.Combine(DestinationDirectory, Path.GetFileName(sourcePath));
-            CheckDestination();
             ExistsInDestination =   File.Exists(DestinationPath);
             LastWriteTime =         File.GetLastWriteTime(SourcePath);
             EncoderInfo =           GetEncoderInfo();
-        }
-
-        protected void CheckDestination()
-        {
-            if (!Directory.Exists(DestinationPath))
-            {
-#if DEBUG
-                Directory.CreateDirectory(DestinationDirectory);
-#else
-                HTMLLog.AddToLog(new LogMessage()
-                {
-                    Message = "Destination directory not found",
-                    Time = DateTime.Now,
-                    Type = MessageType.warning,
-                    Details = DestinationDirectory
-                });
-#endif
-            }
         }
 
         private ImageCodecInfo GetEncoderInfo()
