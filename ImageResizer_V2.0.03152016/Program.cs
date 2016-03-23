@@ -94,6 +94,7 @@ namespace ImageResizer_V2._0._03152016
                     });
                 }
 #endif
+                // TODO: it's still accessing old files. Fix it.
                 IterateThroughDirectories(options.Directory);
             }
             Console.WriteLine();
@@ -108,7 +109,6 @@ namespace ImageResizer_V2._0._03152016
 
         private static void GetFileCount()
         {
-            "getting file count...".Write();
             DirectoryInfo directoryInfo = new DirectoryInfo(options.Directory);
             var directories = (from f in directoryInfo.GetDirectories()
                                   where f.LastWriteTime > DateTime.Now.AddDays(-14)
@@ -118,24 +118,16 @@ namespace ImageResizer_V2._0._03152016
             TotalNumberOfFilesToBeProcessed = 0;
             foreach (DirectoryInfo directory in directories)
                 TotalNumberOfFilesToBeProcessed += directory.GetFiles().Length;
-            TotalNumberOfFilesToBeProcessed.ToString().WriteLine();
-            Console.ReadKey();
         }
 
         private static void IterateOverFiles(string directory)
         {
-            "files".WriteLine();
-            Console.ReadKey();
             foreach (string subDirectory in Directory.GetDirectories(directory))
             {
-                "subdir found".WriteLine();
-                Console.ReadKey();
                 IterateThroughDirectories(subDirectory);
             }
             if (Directory.GetFiles(directory).Length == 0)
             {
-                "directory is empty".WriteLine();
-                Console.ReadKey();
                 return;
             }
             else
@@ -143,26 +135,18 @@ namespace ImageResizer_V2._0._03152016
                                          where File.GetLastWriteTime(f) > DateTime.Now.AddDays(-14)
                                          select f))
                 {
-                    "directory is not empty".WriteLine();
-                    Console.ReadKey();
                     Console.Write("\rResults: " + NumberOfFilesSuccessful + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors | " + Math.Round(((double)((double)TotalNumberOfFilesProcessed / (double)TotalNumberOfFilesToBeProcessed * 100)), 1) + "%");
                     FileToTransfer thisFile = new FileToTransfer(file, Location.FirmID);
                     if (FileTypes.ImageFileTypes.Contains(thisFile.Extension))
                     {
-                        "file is an image".WriteLine();
-                        Console.ReadKey();
                         if (thisFile.ExistsInDestination)
                         {
-                            "file exists".WriteLine();
-                            Console.ReadKey();
                             TotalNumberOfFilesProcessed++;
                             NumberOfFilesSkipped++;
                             continue;
                         }
                         else
                         {
-                            "processing".WriteLine();
-                            Console.ReadKey();
                             Image ResizedImage = ResizeImage(thisFile);
                             SaveImage(ResizedImage, thisFile);
                         }
@@ -182,7 +166,8 @@ namespace ImageResizer_V2._0._03152016
                 Console.Write("\rResults: " + NumberOfFilesSuccessful + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors | " + Math.Round(((double)((double)TotalNumberOfFilesProcessed / (double)TotalNumberOfFilesToBeProcessed * 100)), 1) + "%");
                 if (!Directory.Exists(destinationDirectory))
                 {
-                    "if".WriteLine();
+                    ("--" + destinationDirectory + "-- not found in destination").WriteLine();
+                    Console.ReadKey();
                     HTMLLog.AddToLog(new LogMessage()
                     {
                         Message = "Directory not found in destination",
@@ -195,7 +180,6 @@ namespace ImageResizer_V2._0._03152016
                 }
                 else
                 {
-                    "else".WriteLine();
                     IterateOverFiles(subDirectory);
                 }
             }
