@@ -23,6 +23,7 @@ namespace ImageResizer_V2._0._03152016
         private static int NumberOfErrors;
         private static int TotalNumberOfFilesToBeProcessed;
         private static int TotalNumberOfFilesProcessed;
+        private static IEnumerable<string> DirectoriesToScan;
 
         [DllImport("Kernel32")]
         private static extern bool SetConsoleCtrlHandler(EventHandler exitHandler, bool add);
@@ -39,6 +40,7 @@ namespace ImageResizer_V2._0._03152016
                 Type = MessageType.error,
                 Details = "User cancelled operation"
             });
+            "Updating log before exit...".WriteLine();
             HTMLLog.GenerateReportPanel(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesSuccessful);
             HTMLLog.SaveAndClose();
             Thread.Sleep(2000);
@@ -60,7 +62,7 @@ namespace ImageResizer_V2._0._03152016
             if (CommandLine.Parser.Default.ParseArguments(args, options))
             {
                 GetFileCount();
-                if (!Directory.Exists(options.Directory))
+                if (!Directory.Exists(options.Directory) && options.CreateDirectory)
                     Directory.CreateDirectory(options.Directory);
                 HTMLLog.BeginLog();
                 Location = new LocationFinder();
@@ -94,9 +96,9 @@ namespace ImageResizer_V2._0._03152016
                     });
                 }
 #endif
-                // TODO: it's still accessing old files. Fix it.
                 IterateThroughDirectories(options.Directory);
             }
+
             Console.WriteLine();
             HTMLLog.GenerateReportPanel(NumberOfErrors, NumberOfFilesSkipped, NumberOfFilesSuccessful);
             HTMLLog.SaveAndClose();
@@ -109,35 +111,28 @@ namespace ImageResizer_V2._0._03152016
 
         private static void GetFileCount()
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(options.Directory);
-            var directories = (from f in directoryInfo.GetDirectories()
-                                  where f.LastWriteTime > DateTime.Now.AddDays(-14)
-                                  orderby f.LastWriteTime descending
-                                  select f);
-            int directoryCount = directories.Count();
+            DirectoriesToScan = from d in Directory.GetDirectories(options.Directory)
+                                where DateTime.Compare(DateTime.Now.AddDays(-14), File.GetLastWriteTime(d)) < 0
+                                select d;
             TotalNumberOfFilesToBeProcessed = 0;
-            foreach (DirectoryInfo directory in directories)
-                TotalNumberOfFilesToBeProcessed += directory.GetFiles().Length;
+            foreach (string subDirectory in DirectoriesToScan)
+                TotalNumberOfFilesToBeProcessed += Directory.GetFiles(subDirectory).Length;
         }
 
         private static void IterateOverFiles(string directory)
         {
             foreach (string subDirectory in Directory.GetDirectories(directory))
-            {
                 IterateThroughDirectories(subDirectory);
-            }
             if (Directory.GetFiles(directory).Length == 0)
-            {
                 return;
-            }
             else
                 foreach (string file in (from f in Directory.GetFiles(directory)
-                                         where File.GetLastWriteTime(f) > DateTime.Now.AddDays(-14)
+                                         where DateTime.Compare(DateTime.Now.AddDays(-14), File.GetLastWriteTime(f)) < 0
                                          select f))
                 {
                     Console.Write("\rResults: " + NumberOfFilesSuccessful + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors | " + Math.Round(((double)((double)TotalNumberOfFilesProcessed / (double)TotalNumberOfFilesToBeProcessed * 100)), 1) + "%");
                     FileToTransfer thisFile = new FileToTransfer(file, Location.FirmID);
-                    if (FileTypes.ImageFileTypes.Contains(thisFile.Extension))
+                    if (FileTypes.ImageFileTypes.Contains(thisFile.Extension.ToLower()))
                     {
                         if (thisFile.ExistsInDestination)
                         {
@@ -154,20 +149,18 @@ namespace ImageResizer_V2._0._03152016
                 }
         }
 
-        private static void IterateThroughDirectories(string directory)
+        private static void IterateThroughDirectories(string parentDirectory)
         {
-            var directories = (from d in Directory.GetDirectories(directory)
-                                    where Directory.GetLastWriteTime(directory) > DateTime.Now.AddDays(-14)
-                                    select d);
+            IEnumerable<string> subDirectories = from d in Directory.GetDirectories(parentDirectory)
+                                                 where DateTime.Compare(DateTime.Now.AddDays(-14), File.GetLastWriteTime(d)) < 0
+                                                 select d;
 
-            foreach (string subDirectory in directories)
+            foreach (string subDirectory in subDirectories)
             {
                 string destinationDirectory = Path.Combine(@"\\schintranet\acs\acs\firms\firm" + Location.FirmID + @"\images\jobs\", new DirectoryInfo(subDirectory).Name);
                 Console.Write("\rResults: " + NumberOfFilesSuccessful + " resized/moved | " + NumberOfFilesSkipped + " skipped | " + NumberOfErrors + " errors | " + Math.Round(((double)((double)TotalNumberOfFilesProcessed / (double)TotalNumberOfFilesToBeProcessed * 100)), 1) + "%");
                 if (!Directory.Exists(destinationDirectory))
                 {
-                    ("--" + destinationDirectory + "-- not found in destination").WriteLine();
-                    Console.ReadKey();
                     HTMLLog.AddToLog(new LogMessage()
                     {
                         Message = "Directory not found in destination",
@@ -175,7 +168,7 @@ namespace ImageResizer_V2._0._03152016
                         Type = MessageType.warning,
                         Details = destinationDirectory
                     });
-                    TotalNumberOfFilesProcessed += Directory.GetFiles(directory).Length;
+                    TotalNumberOfFilesProcessed += Directory.GetFiles(subDirectory).Length;
                     continue;
                 }
                 else
